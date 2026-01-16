@@ -49,8 +49,8 @@ A production-ready Retrieval-Augmented Generation (RAG) system with role-based a
 **Windows:**
 ```bash
 Download from: https://github.com/UB-Mannheim/tesseract/wiki
-Or use chocolatey:
-choco install tesseract
+#Or use chocolatey:
+#choco install tesseract
 ```
 
 **Linux:**

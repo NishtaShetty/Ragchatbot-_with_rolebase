@@ -38,17 +38,18 @@ A production-ready Retrieval-Augmented Generation (RAG) system with role-based a
 
 ## 📋 Prerequisites
 
-- Python 3.9+
+- Python 3.9 -3.11
 - Tesseract OCR installed
 - CUDA-compatible GPU (optional, for faster processing)
 - Groq API key
+- Hugging face Acess token
 
 ### Install Tesseract OCR
 
 **Windows:**
 ```bash
-# Download from: https://github.com/UB-Mannheim/tesseract/wiki
-# Or use chocolatey:
+Download from: https://github.com/UB-Mannheim/tesseract/wiki
+Or use chocolatey:
 choco install tesseract
 ```
 
@@ -72,7 +73,7 @@ cd <project-directory>
 
 2. **Create virtual environment**
 ```bash
-python -m venv venv
+py -3.10 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
@@ -90,7 +91,23 @@ GROQ_API_KEY=your_groq_api_key_here
 
 Get your Groq API key from: https://console.groq.com/
 
-5. **Prepare data directory structure**
+5. **Hugging Face**
+For local development only, authenticate using the Hugging Face CLI:
+```bash
+huggingface-cli login
+```
+
+When prompted, paste your Hugging Face access token:
+```bash
+Enter your token (input will not be visible):
+```
+
+Upon successful login, the token is securely stored at:
+```bash
+~/.huggingface/token
+```
+
+6. **Prepare data directory structure**
 ```
 data/
 ├── field_team/    # PDFs for field team
@@ -305,9 +322,6 @@ Contributions are welcome! Please:
 3. Make your changes
 4. Submit a pull request
 
-## 📄 License
-
-[Add your license here]
 
 ## 🙏 Acknowledgments
 

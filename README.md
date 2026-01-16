@@ -331,6 +331,4 @@ Contributions are welcome! Please:
 - AI4Bharat for Indic language models
 - Tesseract OCR for document processing
 
-## 📧 Support
 
-For issues and questions, please open a GitHub issue or contact [your-email@example.com]

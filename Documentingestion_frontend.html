@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Ingestion Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-100 to-indigo-100 min-h-screen flex items-center justify-center p-6">
+
+<div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-slate-200">
+
+    <!-- Header -->
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-slate-800 tracking-tight">
+            Data Ingestion Portal
+        </h1>
+        <p class="text-slate-500 text-sm mt-2">
+            Upload documents to update your RAG pipeline
+        </p>
+    </div>
+
+    <!-- Upload Form -->
+    <form id="uploadForm" class="space-y-6">
+
+        <!-- ROLE SELECTOR (NEW) -->
+        <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">
+                Select Role
+            </label>
+            <select
+                id="role"
+                required
+                class="w-full border border-slate-300 rounded-lg p-2 text-sm"
+            >
+                <option value="">-- Choose Role --</option>
+                <option value="field_team">Field Team</option>
+                <option value="sales">Sales</option>
+                <option value="hr">HR</option>
+            </select>
+        </div>
+
+        <!-- File Upload -->
+        <div class="relative border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-500 transition-all">
+            <input
+                type="file"
+                id="fileInput"
+                multiple
+                accept=".docx,.txt,.pdf,.ppt,.pptx"
+                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div class="space-y-3">
+                <svg class="mx-auto h-12 w-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-5-5v6m0 0l-3-3m3 3l3-3M5 20h14"/>
+                </svg>
+                <p class="text-sm text-slate-700">
+                    <span class="font-semibold text-indigo-600">Click to upload</span>
+                    or drag and drop files
+                </p>
+                <p class="text-xs text-slate-500">
+                    Supported: PDF, DOCX, PPT, TXT
+                </p>
+            </div>
+        </div>
+
+        <!-- Selected Files -->
+        <div id="fileListContainer"
+             class="hidden max-h-40 overflow-y-auto custom-scrollbar space-y-2">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Selected Files
+            </p>
+            <div id="fileList" class="space-y-2"></div>
+        </div>
+
+        <!-- Submit -->
+        <button
+            type="submit"
+            class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-lg"
+        >
+            Upload & Ingest
+        </button>
+    </form>
+
+    <!-- Status -->
+    <div id="statusContainer" class="hidden mt-6">
+        <div id="status"
+             class="text-center text-sm font-medium p-3 rounded-lg border">
+        </div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const fileList = document.getElementById("fileList");
+const fileListContainer = document.getElementById("fileListContainer");
+const statusContainer = document.getElementById("statusContainer");
+const status = document.getElementById("status");
+
+let selectedFiles = [];
+
+fileInput.addEventListener("change", () => {
+    const files = Array.from(fileInput.files);
+    const allowed = ['pdf', 'docx', 'ppt', 'pptx', 'txt'];
+
+    files.forEach(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (allowed.includes(ext)) {
+            selectedFiles.push(file);
+        }
+    });
+
+    renderFiles();
+});
+
+function renderFiles() {
+    fileList.innerHTML = "";
+    if (selectedFiles.length > 0) {
+        fileListContainer.classList.remove("hidden");
+        selectedFiles.forEach((file, index) => {
+            const div = document.createElement("div");
+            div.className =
+                "flex items-center justify-between bg-indigo-50 p-2 px-3 rounded-lg border border-indigo-100 animate-fadeIn";
+            div.innerHTML = `
+                <span class="text-xs text-indigo-700 font-medium truncate w-4/5">
+                    ${file.name}
+                </span>
+                <button type="button"
+                        onclick="removeFile(${index})"
+                        class="text-red-500 hover:text-red-700 font-bold">
+                    &times;
+                </button>
+            `;
+            fileList.appendChild(div);
+        });
+    } else {
+        fileListContainer.classList.add("hidden");
+        fileInput.value = "";
+    }
+}
+
+window.removeFile = (index) => {
+    selectedFiles.splice(index, 1);
+    renderFiles();
+};
+
+document.getElementById("uploadForm").onsubmit = async (e) => {
+    e.preventDefault();
+
+    if (selectedFiles.length === 0) return;
+
+    const role = document.getElementById("role").value;
+    if (!role) {
+        alert("Please select a role");
+        return;
+    }
+
+    statusContainer.classList.remove("hidden");
+    status.className =
+        "text-center text-sm font-medium p-3 rounded-lg border bg-indigo-50 text-indigo-700 border-indigo-100 animate-pulse";
+    status.innerText = `Ingesting ${selectedFiles.length} file(s)...`;
+
+    const formData = new FormData();
+    formData.append("role", role);                    // ✅ REQUIRED
+    selectedFiles.forEach(file =>
+        formData.append("files", file)                // ✅ REQUIRED
+    );
+
+    try {
+        const response = await fetch("http://localhost:6002/ingest", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        status.className =
+            "text-center text-sm font-medium p-3 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200";
+        status.innerText = "✅ " + data.message;
+
+        selectedFiles = [];
+        renderFiles();
+    } catch (err) {
+        status.className =
+            "text-center text-sm font-medium p-3 rounded-lg border bg-red-50 text-red-700 border-red-200";
+        status.innerText = "❌ Ingestion service not reachable";
+    }
+};
+</script>
+
+</body>
+</html>

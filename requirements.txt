@@ -1,0 +1,41 @@
+# Core Web Framework
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# CORS Support
+python-dotenv
+
+# Vector Database & Embeddings
+chromadb==0.4.22
+sentence-transformers
+
+# PDF Processing
+pypdf
+PyMuPDF
+
+# OCR & Document Processing
+pytesseract
+opencv-python
+Pillow
+
+# NLP & Language Models
+transformers
+torch
+deep-translator
+
+# Retrieval & Ranking
+rank-bm25
+
+
+# LLM Integration
+groq
+
+# Utilities
+numpy
+tqdm
+logging
+
+# Optional: For better performance
+accelerate==0.26.1

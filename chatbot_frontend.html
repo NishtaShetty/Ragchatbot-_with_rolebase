@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Multilingual Role-Based RAG Assistant</title>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: Inter, system-ui, sans-serif;
+    background: #f5f7fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 1100px;
+    height: 90vh;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    padding: 18px 32px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #111827;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.header h1 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Chat */
+.chat {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
+    background: #fafafa;
+}
+
+.message {
+    margin-bottom: 18px;
+    display: flex;
+}
+
+.user { justify-content: flex-end; }
+.bot { justify-content: flex-start; }
+
+.bubble {
+    max-width: 75%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 14.5px;
+    line-height: 1.6;
+}
+
+.user .bubble {
+    background: #111827;
+    color: white;
+    border-bottom-right-radius: 6px;
+}
+
+.bot .bubble {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-bottom-left-radius: 6px;
+}
+
+/* Input */
+.input-area {
+    padding: 20px 32px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+select, button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.input-box {
+    display: flex;
+    gap: 10px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 12px;
+    padding: 6px;
+}
+
+.input-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 12px 14px;
+    font-size: 14px;
+}
+
+.send-btn {
+    background: #111827;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🤖</div>
+        <h1>Role-Based Multilingual RAG Assistant</h1>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat" id="chat"></div>
+
+    <!-- Input -->
+    <div class="input-area">
+
+        <div class="controls">
+
+            <!-- ROLE SELECTOR (NEW) -->
+            <select id="role">
+                <option value="field_team">Field Team</option>
+                <option value="sales">Sales</option>
+                <option value="hr">HR</option>
+            </select>
+
+            <!-- LANGUAGE SELECTOR -->
+            <select id="language">
+                <option value="en">English</option>
+                <option value="kn">Kannada</option>
+                <option value="hi">Hindi</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="ml">Malayalam</option>
+                <option value="mr">Marathi</option>
+                <option value="bn">Bengali</option>
+                <option value="gu">Gujarati</option>
+                <option value="or">Odia</option>
+                <option value="as">Assamese</option>
+            </select>
+
+            <button onclick="startVoice()">🎙️ Voice</button>
+        </div>
+
+        <div class="input-box">
+            <input id="query" placeholder="Type your question..."
+                   onkeypress="if(event.key==='Enter') sendText()"/>
+            <button class="send-btn" onclick="sendText()">Send</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+
+/* ---------- UI HELPERS ---------- */
+function addMessage(text, role) {
+    const div = document.createElement("div");
+    div.className = `message ${role}`;
+    div.innerHTML = `<div class="bubble">${escapeHtml(text)}</div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const d = document.createElement("div");
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+/* ---------- SEND TEXT ---------- */
+async function sendText(textOverride = null) {
+    const input = document.getElementById("query");
+    const text = textOverride ?? input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    const payload = {
+        query: text,
+        language: document.getElementById("language").value,
+        role: document.getElementById("role").value,   // ✅ ROLE SENT
+        input_type: "text"
+    };
+
+    const res = await fetch("http://127.0.0.1:6001/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    addMessage(data.answer, "bot");
+}
+
+/* ---------- VOICE INPUT ---------- */
+function startVoice() {
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("Speech recognition not supported. Use Chrome or Edge.");
+        return;
+    }
+
+    const langMap = {
+        en: "en-US",
+        kn: "kn-IN",
+        hi: "hi-IN",
+        ta: "ta-IN",
+        te: "te-IN",
+        ml: "ml-IN",
+        mr: "mr-IN",
+        bn: "bn-IN",
+        gu: "gu-IN",
+        or: "or-IN",
+        as: "as-IN",
+    };
+
+    const selectedLang = document.getElementById("language").value;
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = langMap[selectedLang] || "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    addMessage("🎙️ Listening...", "user");
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        sendText(transcript);
+    };
+
+    recognition.onerror = () => {
+        addMessage("Voice recognition failed.", "bot");
+    };
+
+    recognition.start();
+}
+</script>
+
+</body>
+</html>
